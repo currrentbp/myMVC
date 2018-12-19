@@ -1,6 +1,7 @@
 package com.currentbp.entity;
 
 import java.lang.reflect.Method;
+import java.util.List;
 
 /**
  * @author baopan
@@ -10,6 +11,7 @@ public class ClassFunction {
     private String path;
     private String simpleClassName;
     private Method method;
+    private List<String> params;
 
     public String getPath() {
         return path;
@@ -35,12 +37,21 @@ public class ClassFunction {
         this.method = method;
     }
 
+    public List<String> getParams() {
+        return params;
+    }
+
+    public void setParams(List<String> params) {
+        this.params = params;
+    }
+
     @Override
     public String toString() {
         return "ClassFunction{" +
                 "path='" + path + '\'' +
                 ", simpleClassName='" + simpleClassName + '\'' +
                 ", method=" + method +
+                ", params=" + params +
                 '}';
     }
 }

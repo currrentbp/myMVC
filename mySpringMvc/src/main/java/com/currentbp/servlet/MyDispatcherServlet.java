@@ -1,14 +1,13 @@
 package com.currentbp.servlet;
 
 
-import com.currentbp.annotation.MyAutoWire;
-import com.currentbp.annotation.MyBean;
-import com.currentbp.annotation.MyController;
-import com.currentbp.annotation.MyRequestMapping;
+import com.currentbp.annotation.*;
 import com.currentbp.entity.BeanRelation;
 import com.currentbp.entity.ClassFunction;
 import com.currentbp.util.all.ListUtil;
 import com.currentbp.util.all.StringUtil;
+import jdk.internal.org.objectweb.asm.*;
+import jdk.internal.org.objectweb.asm.Type;
 import org.junit.Test;
 
 import javax.servlet.ServletException;
@@ -17,8 +16,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
+import java.io.InputStream;
+import java.lang.reflect.*;
 import java.util.*;
 
 /**
@@ -76,6 +75,8 @@ public class MyDispatcherServlet extends HttpServlet {
                     classFunction.setPath(basePath + otherPath);
                     classFunction.setMethod(method);
                     classFunction.setSimpleClassName(beanRelation.getBeanName());
+                    List<String> paramNames = new ArrayList<>();
+                    classFunction.setParams(paramNames);
                     controllerPath.put(classFunction.getPath(), classFunction);
                 }
             }
@@ -184,13 +185,62 @@ public class MyDispatcherServlet extends HttpServlet {
             return;
         }
         Method method = classFunction.getMethod();
+        Parameter[] parameters = method.getParameters();
         BeanRelation beanRelation = allBeanMap.get(classFunction.getSimpleClassName());
+        String[] methodParameterNamesByAsm4 = getMethodParameterNamesByAsm4(beanRelation.getClassType(),method);
+
+        ListUtil.printList(methodParameterNamesByAsm4);
         //todo 注入参数 not work
         try {
             method.invoke(beanRelation.getBean());
         } catch (Exception e) {
 
         }
+    }
+
+    public static String[] getMethodParameterNamesByAsm4(Class<?> clazz, final Method method) {
+        final Class<?>[] parameterTypes = method.getParameterTypes();
+        if (parameterTypes == null || parameterTypes.length == 0) {
+            return null;
+        }
+        final Type[] types = new Type[parameterTypes.length];
+        for (int i = 0; i < parameterTypes.length; i++) {
+            types[i] = Type.getType(parameterTypes[i]);
+        }
+        final String[] parameterNames = new String[parameterTypes.length];
+
+        String className = clazz.getName();
+        int lastDotIndex = className.lastIndexOf(".");
+        className = className.substring(lastDotIndex + 1) + ".class";
+        InputStream is = clazz.getResourceAsStream(className);
+        try {
+            ClassReader classReader = new ClassReader(is);
+            classReader.accept(new ClassVisitor(Opcodes.ASM4) {
+                @Override
+                public MethodVisitor visitMethod(int access, String name, String desc, String signature, String[] exceptions) {
+                    // 只处理指定的方法
+                    Type[] argumentTypes = Type.getArgumentTypes(desc);
+                    if (!method.getName().equals(name) || !Arrays.equals(argumentTypes, types)) {
+                        return null;
+                    }
+                    return new MethodVisitor(Opcodes.ASM4) {
+                        @Override
+                        public void visitLocalVariable(String name, String desc, String signature, Label start, Label end, int index) {
+                            // 静态方法第一个参数就是方法的参数，如果是实例方法，第一个参数是this
+                            if (Modifier.isStatic(method.getModifiers())) {
+                                parameterNames[index] = name;
+                            } else if (index > 0) {
+                                parameterNames[index - 1] = name;
+                            }
+                        }
+                    };
+
+                }
+            }, 0);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return parameterNames;
     }
 
     @Test

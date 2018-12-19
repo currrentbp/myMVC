@@ -3,6 +3,7 @@ package controller;
 
 import com.currentbp.annotation.MyAutoWire;
 import com.currentbp.annotation.MyController;
+import com.currentbp.annotation.MyRequestBody;
 import com.currentbp.annotation.MyRequestMapping;
 import service.StudentService;
 
@@ -17,7 +18,7 @@ public class TestController {
     private StudentService studentService;
 
     @MyRequestMapping("/m")
-    public void queryStudent(){
+    public void queryStudent(@MyRequestBody String s1,@MyRequestBody String s2){
         studentService.queryById(10);
     }
 
