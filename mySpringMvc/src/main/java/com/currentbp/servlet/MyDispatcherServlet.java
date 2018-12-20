@@ -1,13 +1,17 @@
 package com.currentbp.servlet;
 
 
+import com.alibaba.fastjson.JSON;
 import com.currentbp.annotation.*;
 import com.currentbp.entity.BeanRelation;
 import com.currentbp.entity.ClassFunction;
+import com.currentbp.entity.MethodAndType;
+import com.currentbp.util.all.Assert;
 import com.currentbp.util.all.ListUtil;
 import com.currentbp.util.all.StringUtil;
 import jdk.internal.org.objectweb.asm.*;
 import jdk.internal.org.objectweb.asm.Type;
+import org.apache.commons.collections.CollectionUtils;
 import org.junit.Test;
 
 import javax.servlet.ServletException;
@@ -19,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author baopan
@@ -33,12 +38,12 @@ public class MyDispatcherServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        doPost(req, resp);
+        dispatch(req, resp, "get");
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        dispatch(req, resp);
+        dispatch(req, resp, "post");
     }
 
     @Override
@@ -75,8 +80,7 @@ public class MyDispatcherServlet extends HttpServlet {
                     classFunction.setPath(basePath + otherPath);
                     classFunction.setMethod(method);
                     classFunction.setSimpleClassName(beanRelation.getBeanName());
-                    List<String> paramNames = new ArrayList<>();
-                    classFunction.setParams(paramNames);
+                    classFunction.setParams(getMethodAndType(beanRelation.getClassType(), method));
                     controllerPath.put(classFunction.getPath(), classFunction);
                 }
             }
@@ -159,7 +163,7 @@ public class MyDispatcherServlet extends HttpServlet {
             }
             ListUtil.printList(classPath.toArray());
         } catch (Exception e) {
-
+            System.out.println(e);
         }
     }
 
@@ -175,7 +179,7 @@ public class MyDispatcherServlet extends HttpServlet {
         }
     }
 
-    private void dispatch(HttpServletRequest request, HttpServletResponse response) {
+    private void dispatch(HttpServletRequest request, HttpServletResponse response, String type) {
         String originalPath = request.getRequestURI();
         String substring = originalPath.substring(1);
         String path = substring.substring(substring.indexOf("/"));
@@ -185,20 +189,60 @@ public class MyDispatcherServlet extends HttpServlet {
             return;
         }
         Method method = classFunction.getMethod();
-        Parameter[] parameters = method.getParameters();
         BeanRelation beanRelation = allBeanMap.get(classFunction.getSimpleClassName());
-        String[] methodParameterNamesByAsm4 = getMethodParameterNamesByAsm4(beanRelation.getClassType(),method);
+        List<MethodAndType> methodAndTypes = classFunction.getParams();
+        Object bean = beanRelation.getBean();
+        List<Object> paramValues = new ArrayList<>();
+        if (CollectionUtils.isEmpty(methodAndTypes)) {
 
-        ListUtil.printList(methodParameterNamesByAsm4);
-        //todo 注入参数 not work
+        } else if ("get".equals(type)) {
+            List<String> paramNames = methodAndTypes.stream().map(MethodAndType::getName).collect(Collectors.toList());
+            Map<String, MethodAndType> paramMap = methodAndTypes.stream().collect(Collectors.toMap(MethodAndType::getName, e -> e));
+
+            for (String paramName : paramNames) {
+                String paramValue = request.getParameter(paramName);
+                Object object = JSON.parseObject(paramValue, paramMap.get(paramName).getMethodType());
+                paramValues.add(object);
+            }
+        } else if ("post".equals(type)) {
+            //post请求时，注入参数只能是一个对象
+            List<String> paramNames = methodAndTypes.stream().map(MethodAndType::getName).collect(Collectors.toList());
+            Map<String, MethodAndType> paramMap = methodAndTypes.stream().collect(Collectors.toMap(MethodAndType::getName, e -> e));
+            String requestBody = getRequestBody(request);
+            Object object = JSON.parseObject(requestBody, paramMap.get(paramNames.get(0)).getMethodType());
+            paramValues.add(object);
+        }
+        invokeMethod(method, bean, paramValues, response);
+    }
+
+    private void invokeMethod(Method method, Object bean, List<Object> paramValues, HttpServletResponse response) {
         try {
-            method.invoke(beanRelation.getBean());
+            if (CollectionUtils.isEmpty(paramValues)) {
+                method.invoke(bean);
+            } else {
+                method.invoke(bean, paramValues.toArray());
+            }
         } catch (Exception e) {
-
+            System.out.println("invoke is error:" + e.getMessage() + "  st:" + e.getStackTrace());
         }
     }
 
-    public static String[] getMethodParameterNamesByAsm4(Class<?> clazz, final Method method) {
+
+    private List<MethodAndType> getMethodAndType(Class<?> clazz, final Method method) {
+        List<MethodAndType> result = new ArrayList<>();
+        final Class<?>[] parameterTypes = method.getParameterTypes();
+        String[] methodParameterNamesByAsm4 = getMethodParameterNamesByAsm4(clazz, method);
+        if (null == methodParameterNamesByAsm4 || 0 == methodParameterNamesByAsm4.length) {
+            return null;
+        }
+        for (int i = 0; i < methodParameterNamesByAsm4.length; i++) {
+            MethodAndType methodAndType = new MethodAndType(methodParameterNamesByAsm4[i], parameterTypes[i]);
+            result.add(methodAndType);
+        }
+        return result;
+    }
+
+    private String[] getMethodParameterNamesByAsm4(Class<?> clazz, final Method method) {
         final Class<?>[] parameterTypes = method.getParameterTypes();
         if (parameterTypes == null || parameterTypes.length == 0) {
             return null;
@@ -241,6 +285,32 @@ public class MyDispatcherServlet extends HttpServlet {
             e.printStackTrace();
         }
         return parameterNames;
+    }
+
+
+    private String getRequestBody(HttpServletRequest request) {
+        InputStream is = null;
+        String result = null;
+        try {
+            is = request.getInputStream();
+            StringBuilder sb = new StringBuilder();
+            byte[] b = new byte[4096];
+            for (int n; (n = is.read(b)) != -1; ) {
+                sb.append(new String(b, 0, n));
+            }
+            result = sb.toString();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (null != is) {
+                try {
+                    is.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return result;
     }
 
     @Test

@@ -11,7 +11,8 @@ public class ClassFunction {
     private String path;
     private String simpleClassName;
     private Method method;
-    private List<String> params;
+
+    private List<MethodAndType> params;
 
     public String getPath() {
         return path;
@@ -37,11 +38,11 @@ public class ClassFunction {
         this.method = method;
     }
 
-    public List<String> getParams() {
+    public List<MethodAndType> getParams() {
         return params;
     }
 
-    public void setParams(List<String> params) {
+    public void setParams(List<MethodAndType> params) {
         this.params = params;
     }
 
