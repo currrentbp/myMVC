@@ -1,10 +1,7 @@
 package controller;
 
 
-import com.currentbp.annotation.MyAutoWire;
-import com.currentbp.annotation.MyController;
-import com.currentbp.annotation.MyRequestBody;
-import com.currentbp.annotation.MyRequestMapping;
+import com.currentbp.annotation.*;
 import entity.Student;
 import service.StudentService;
 
@@ -30,7 +27,10 @@ public class TestController {
     }
 
     @MyRequestMapping("m2")
-    public void create(@MyRequestBody Student student) {
-        studentService.createStudent(student);
+    @MyResponseBody
+    public Student create(@MyRequestBody Student student) {
+        int id = studentService.createStudent(student);
+        student.setId(id);
+        return student;
     }
 }
