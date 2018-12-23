@@ -1,7 +1,7 @@
 package controller;
 
 
-import com.currentbp.annotation.*;
+import com.springmvc.currentbp.annotation.*;
 import entity.Student;
 import service.StudentService;
 

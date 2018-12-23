@@ -1,7 +1,7 @@
-package com.currentbp.util;
+package com.springmvc.currentbp.util;
 
 import com.currentbp.javassist.ParamterNameTestClass;
-import com.currentbp.servlet.MyDispatcherServlet;
+import com.springmvc.currentbp.servlet.MyDispatcherServlet;
 import com.currentbp.util.all.ListUtil;
 import javassist.*;
 import javassist.bytecode.CodeAttribute;

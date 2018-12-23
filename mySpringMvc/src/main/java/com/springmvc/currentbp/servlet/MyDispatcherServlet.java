@@ -1,22 +1,19 @@
-package com.currentbp.servlet;
+package com.springmvc.currentbp.servlet;
 
 
 import com.alibaba.fastjson.JSON;
-import com.currentbp.annotation.*;
-import com.currentbp.entity.BeanRelation;
-import com.currentbp.entity.ClassFunction;
-import com.currentbp.entity.MethodAndType;
-import com.currentbp.util.ClassParamterName;
-import com.currentbp.util.all.Assert;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.currentbp.util.all.ListUtil;
 import com.currentbp.util.all.StringUtil;
-import jdk.internal.org.objectweb.asm.*;
-import jdk.internal.org.objectweb.asm.Type;
+import com.springmvc.currentbp.annotation.*;
+import com.springmvc.currentbp.entity.BeanRelation;
+import com.springmvc.currentbp.entity.ClassFunction;
+import com.springmvc.currentbp.entity.MethodAndType;
+import com.springmvc.currentbp.util.ClassParamterName;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.Test;
 
 import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -237,7 +234,7 @@ public class MyDispatcherServlet extends HttpServlet {
 
             } else {
                 if (method.isAnnotationPresent(MyResponseBody.class)) {
-                    setResponseBody(response, invoke.toString());
+                    setResponseBody(response, JSON.toJSONString(invoke));
                 }
             }
         } catch (Exception e) {

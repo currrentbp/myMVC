@@ -1,4 +1,4 @@
-package com.currentbp.entity;
+package com.springmvc.currentbp.entity;
 
 import java.lang.reflect.Method;
 import java.util.List;

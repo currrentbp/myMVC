@@ -1,4 +1,4 @@
-package com.currentbp.entity;
+package com.springmvc.currentbp.entity;
 
 /**
  * @author baopan

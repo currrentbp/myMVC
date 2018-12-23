@@ -1,4 +1,4 @@
-package com.currentbp.annotation;
+package com.springmvc.currentbp.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

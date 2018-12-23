@@ -1,4 +1,4 @@
-package com.currentbp.annotation;
+package com.springmvc.currentbp.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -10,6 +10,7 @@ import java.lang.annotation.Target;
  * @createTime 20181126
  */
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.FIELD})//作用到属性上
-public @interface MyAutoWire {
+@Target({ElementType.TYPE})//作用到类上
+public @interface MyController {
+    String value();
 }

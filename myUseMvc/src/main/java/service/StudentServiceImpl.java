@@ -1,6 +1,6 @@
 package service;
 
-import com.currentbp.annotation.MyBean;
+import com.springmvc.currentbp.annotation.MyBean;
 import entity.Student;
 
 /**

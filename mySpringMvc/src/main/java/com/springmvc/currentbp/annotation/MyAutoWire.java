@@ -1,4 +1,4 @@
-package com.currentbp.annotation;
+package com.springmvc.currentbp.annotation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -7,9 +7,9 @@ import java.lang.annotation.Target;
 
 /**
  * @author baopan
- * @createTime 20181219
+ * @createTime 20181126
  */
-@Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface MyResponseBody {
+@Target({ElementType.FIELD})//作用到属性上
+public @interface MyAutoWire {
 }
